@@ -1,0 +1,29 @@
+From 56160e073deee585ea75a2ee69b2706918430ebe Mon Sep 17 00:00:00 2001
+From: Jan Tulak <jtulak@redhat.com>
+Date: Tue, 23 Apr 2019 16:10:36 +0200
+Subject: [PATCH 8/9] tests: 018 - remove unnecessary check for crypt
+
+This is migrate test, not crypt test, so we don't have to test
+what version of encryption was used; Hardcoded value like the removed
+line leads to trouble when the system default changes.
+
+Signed-off-by: Jan Tulak <jtulak@redhat.com>
+---
+ tests/bashtests/018-migrate.sh | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/tests/bashtests/018-migrate.sh b/tests/bashtests/018-migrate.sh
+index fa1a745..898f827 100755
+--- a/tests/bashtests/018-migrate.sh
++++ b/tests/bashtests/018-migrate.sh
+@@ -196,7 +196,6 @@ crypt_vol1=${CRYPT_VOL_PREFIX}001
+ 
+ passwd="cai0ohMo8M"
+ pass | ssm create $dev1
+-check crypt_vol_field $crypt_vol1 type LUKS1
+ check crypt_vol_field $crypt_vol1 device $dev1
+ check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none crypt
+ 
+-- 
+2.21.0
+

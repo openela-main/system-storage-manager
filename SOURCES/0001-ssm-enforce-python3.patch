@@ -1,0 +1,259 @@
+From e19db289c5080530f2d2a2f21dde35fd12571c1b Mon Sep 17 00:00:00 2001
+From: Jan Tulak <jtulak@redhat.com>
+Date: Fri, 10 Aug 2018 17:29:48 +0200
+Subject: [PATCH 1/9] ssm: enforce python3
+
+RHEL8 and later have python3 only.
+
+Change all shebangs and version-dependent calls to explicitly use
+Python 3 and update the docs respectively.  This also marks the end of
+python2 support.
+
+Signed-off-by: Jan Tulak <jtulak@redhat.com>
+---
+ INSTALL                           | 2 +-
+ Makefile                          | 8 ++++----
+ README                            | 2 +-
+ bin/ssm                           | 2 +-
+ bin/ssm.local                     | 2 +-
+ doc/Makefile                      | 2 +-
+ doc/generate_usage_includes.py    | 2 +-
+ doc/src/requirements.rst          | 2 +-
+ man8/ssm.8                        | 2 +-
+ test.py                           | 2 +-
+ tests/__init__.py                 | 2 +-
+ tests/unittests/__init__.py       | 2 +-
+ tests/unittests/common.py         | 2 +-
+ tests/unittests/test_btrfs.py     | 2 +-
+ tests/unittests/test_lvm.py       | 2 +-
+ tests/unittests/test_misc.py      | 2 +-
+ tests/unittests/test_multipath.py | 2 +-
+ tests/unittests/test_ssm.py       | 2 +-
+ 18 files changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/INSTALL b/INSTALL
+index f1f0277..4dbcd2e 100644
+--- a/INSTALL
++++ b/INSTALL
+@@ -21,7 +21,7 @@ local sources with:
+ Requirements
+ ************
+ 
+-Python 2.6 or higher is required to run this tool. System Storage
++Python 3.6 or higher is required to run this tool. System Storage
+ Manager can only be run as root since most of the commands require
+ root privileges.
+ 
+diff --git a/Makefile b/Makefile
+index 2d887c4..80ae3f9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -28,7 +28,7 @@ ifndef PREVIOUS
+ endif
+ 
+ clean:
+-	@python setup.py clean
++	@python3 setup.py clean
+ 	rm -f MANIFEST
+ 	find . -\( -name "*.pyc" -o -name '*.pyo' -o -name "*~" -\) -delete
+ 
+@@ -36,7 +36,7 @@ git-clean:
+ 	git clean -f
+ 
+ install:
+-	@python setup.py install
++	@python3 setup.py install
+ 
+ spec: check_vars
+ 	@(LC_ALL=C date +"* %a %b %e %Y `git config --get user.name` <`git config --get user.email`> - $(VERSION)"; git log --pretty="format:- %s (%an)" $(PREVIOUS)..HEAD| cat; echo -e "\n\n"; cat CHANGES) > CHANGES.bck; mv CHANGES.bck CHANGES
+@@ -51,10 +51,10 @@ docs:
+ 	@make dist -C doc
+ 
+ source: test clean
+-	@python setup.py sdist
++	@python3 setup.py sdist
+ 
+ test:
+-	@python test.py
++	@python3 test.py
+ 
+ push_html:
+ 	scp -r doc/_build/singlehtml/* lczerner@shell.sourceforge.net:/home/project-web/storagemanager/htdocs/
+diff --git a/README b/README
+index fe16990..95f20ae 100644
+--- a/README
++++ b/README
+@@ -684,7 +684,7 @@ local sources with:
+ Requirements
+ ************
+ 
+-Python 2.6 or higher is required to run this tool. System Storage
++Python 3.6 or higher is required to run this tool. System Storage
+ Manager can only be run as root since most of the commands require
+ root privileges.
+ 
+diff --git a/bin/ssm b/bin/ssm
+index 53aece6..13b2241 100755
+--- a/bin/ssm
++++ b/bin/ssm
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ #
+diff --git a/bin/ssm.local b/bin/ssm.local
+index d5bedec..94ea9dd 100755
+--- a/bin/ssm.local
++++ b/bin/ssm.local
+@@ -26,7 +26,7 @@ export PYTHONPATH="$SSMDIR"
+ 
+ # Run coverage if the environment variable is set up.
+ if [ "$RUN_COVERAGE" = "" ]; then
+-	python $SSMDIR/bin/ssm "$@"
++	python3 $SSMDIR/bin/ssm "$@"
+ else
+ 	$RUN_COVERAGE $SSMDIR/bin/ssm "$@"
+ fi
+diff --git a/doc/Makefile b/doc/Makefile
+index 09ee867..43e531b 100644
+--- a/doc/Makefile
++++ b/doc/Makefile
+@@ -3,7 +3,7 @@
+ 
+ # You can set these variables from the command line.
+ SPHINXOPTS    =
+-SPHINXBUILD   = sphinx-build
++SPHINXBUILD   = sphinx-build-3
+ PAPER         = a4
+ BUILDDIR      = _build
+ 
+diff --git a/doc/generate_usage_includes.py b/doc/generate_usage_includes.py
+index d7695f8..5ced9e6 100755
+--- a/doc/generate_usage_includes.py
++++ b/doc/generate_usage_includes.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ 
+ import re
+ import sys, os
+diff --git a/doc/src/requirements.rst b/doc/src/requirements.rst
+index 0482e1d..18508e9 100644
+--- a/doc/src/requirements.rst
++++ b/doc/src/requirements.rst
+@@ -3,7 +3,7 @@
+ Requirements
+ ============
+ 
+-Python 2.6 or higher is required to run this tool. System Storage Manager
++Python 3.6 or higher is required to run this tool. System Storage Manager
+ can only be run as root since most of the commands require root privileges.
+ 
+ There are other requirements listed below, but note that you do not
+diff --git a/man8/ssm.8 b/man8/ssm.8
+index 12859dc..94ad144 100644
+--- a/man8/ssm.8
++++ b/man8/ssm.8
+@@ -865,7 +865,7 @@ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <\fI\%http://www.gnu.org/licenses/\fP>.
+ .SH REQUIREMENTS
+ .sp
+-Python 2.6 or higher is required to run this tool. System Storage Manager
++Python 3.6 or higher is required to run this tool. System Storage Manager
+ can only be run as root since most of the commands require root privileges.
+ .sp
+ There are other requirements listed below, but note that you do not
+diff --git a/test.py b/test.py
+index 721fe08..28530fa 100755
+--- a/test.py
++++ b/test.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ #
+diff --git a/tests/__init__.py b/tests/__init__.py
+index 6d8f17e..9f0c266 100644
+--- a/tests/__init__.py
++++ b/tests/__init__.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ #
+diff --git a/tests/unittests/__init__.py b/tests/unittests/__init__.py
+index 3776154..512baac 100644
+--- a/tests/unittests/__init__.py
++++ b/tests/unittests/__init__.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ #
+diff --git a/tests/unittests/common.py b/tests/unittests/common.py
+index 5495e22..37e0434 100644
+--- a/tests/unittests/common.py
++++ b/tests/unittests/common.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ #
+diff --git a/tests/unittests/test_btrfs.py b/tests/unittests/test_btrfs.py
+index 36db292..6af94cd 100644
+--- a/tests/unittests/test_btrfs.py
++++ b/tests/unittests/test_btrfs.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2012 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ #
+diff --git a/tests/unittests/test_lvm.py b/tests/unittests/test_lvm.py
+index 6489ba8..abe6d6b 100644
+--- a/tests/unittests/test_lvm.py
++++ b/tests/unittests/test_lvm.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ #
+diff --git a/tests/unittests/test_misc.py b/tests/unittests/test_misc.py
+index 2afc88f..cea3d19 100644
+--- a/tests/unittests/test_misc.py
++++ b/tests/unittests/test_misc.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2018 Red Hat, Inc., Jan Tulak <jtulak@redhat.com>
+ #
+diff --git a/tests/unittests/test_multipath.py b/tests/unittests/test_multipath.py
+index 7239c2a..49c4a6c 100644
+--- a/tests/unittests/test_multipath.py
++++ b/tests/unittests/test_multipath.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2012 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ # (C)2016 Red Hat, Inc., Jan Tulak <jtulak@redhat.com>
+diff --git a/tests/unittests/test_ssm.py b/tests/unittests/test_ssm.py
+index 1fb0297..142bee2 100644
+--- a/tests/unittests/test_ssm.py
++++ b/tests/unittests/test_ssm.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+ #
+-- 
+2.21.0
+

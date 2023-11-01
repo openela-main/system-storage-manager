@@ -1,0 +1,102 @@
+From a3419509c2f4baadd453fc650cef894a6b53329b Mon Sep 17 00:00:00 2001
+From: Jan Tulak <jtulak@redhat.com>
+Date: Thu, 6 Jun 2019 13:13:15 +0200
+Subject: [PATCH] crypt: accept versions with -rc suffix as well
+
+SSM crashed if cryptsetup --version produced a string like cryptsetup
+1.2.3-rc0. Make sure that the -rc and similar suffixes doesn't matter.
+
+Signed-off-by: Jan Tulak <jtulak@redhat.com>
+---
+ ssmlib/backends/crypt.py      |  2 ++
+ tests/unittests/__init__.py   |  3 +-
+ tests/unittests/test_crypt.py | 52 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 56 insertions(+), 1 deletion(-)
+ create mode 100644 tests/unittests/test_crypt.py
+
+diff --git a/ssmlib/backends/crypt.py b/ssmlib/backends/crypt.py
+index 8d93fe9..dd203e0 100644
+--- a/ssmlib/backends/crypt.py
++++ b/ssmlib/backends/crypt.py
+@@ -52,6 +52,8 @@ MAX_DEVS = 999
+ def get_cryptsetup_version():
+     try:
+         output = misc.run(['cryptsetup', '--version'], can_fail=True)[1]
++        # drop -rc and similar additions
++        output = re.sub(r"-.*$", '', output)
+         version = list(map(int, output.strip().split()[-1].split('.', 3)))
+     except (OSError, AttributeError):
+         version = [0, 0, 0]
+diff --git a/tests/unittests/__init__.py b/tests/unittests/__init__.py
+index 512baac..52cd1ba 100644
+--- a/tests/unittests/__init__.py
++++ b/tests/unittests/__init__.py
+@@ -15,4 +15,5 @@
+ # You should have received a copy of the GNU General Public License
+ # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+-__all__ = ["test_ssm", "test_lvm", "test_btrfs", "test_misc", "test_multipath"]
++__all__ = ["test_ssm", "test_lvm", "test_btrfs", "test_misc", "test_multipath",
++           "test_crypt"]
+diff --git a/tests/unittests/test_crypt.py b/tests/unittests/test_crypt.py
+new file mode 100644
+index 0000000..2acb58a
+--- /dev/null
++++ b/tests/unittests/test_crypt.py
+@@ -0,0 +1,52 @@
++#!/usr/bin/env python
++#
++# (C)2012 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
++#
++# This program is free software: you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation, either version 2 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program.  If not, see <http://www.gnu.org/licenses/>.
++
++# Unittests for the system storage manager btrfs backend
++
++
++import unittest
++from ssmlib import main
++from ssmlib import misc
++from ssmlib import problem
++from ssmlib.backends import crypt
++from tests.unittests.common import *
++from unittest.mock import MagicMock, patch
++
++IGNORE_CMDS = ['udevadm']
++
++class CryptFunctionCheck(MockSystemDataSource):
++
++    def test_get_version(self):
++        """Traceback (most recent call last):
++        File "./test.py", line 32, in <module>
++            from ssmlib import main
++        File "/var/str/source/ssmlib/main.py", line 31, in <module>
++            from ssmlib.backends import lvm, crypt, btrfs, md, multipath
++        File "/var/str/source/ssmlib/backends/crypt.py", line 60, in <module>
++            CRYPTSETUP_VERSION = get_cryptsetup_version()
++        File "/var/str/source/ssmlib/backends/crypt.py", line 55, in get_cryptsetup_version
++            version = list(map(int, output.strip().split()[-1].split('.', 3)))
++        ValueError: invalid literal for int() with base 10: '0-rc0'
++                """
++
++        mock = MagicMock(return_value=(None, "cryptsetup 1.2.3-rc0"))
++        with patch('ssmlib.misc.run', mock):
++            self.assertEqual([1, 2, 3], crypt.get_cryptsetup_version())
++
++        mock = MagicMock(return_value=(None, "cryptsetup 10.21.32"))
++        with patch('ssmlib.misc.run', mock):
++            self.assertEqual([10, 21, 32], crypt.get_cryptsetup_version())
+\ No newline at end of file
+-- 
+2.21.0
+

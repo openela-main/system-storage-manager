@@ -1,0 +1,34 @@
+From 168e3e9b41cfa4a954576c08cf03e0a18c80edb4 Mon Sep 17 00:00:00 2001
+From: Jan Tulak <jtulak@redhat.com>
+Date: Thu, 11 Apr 2019 13:17:36 +0200
+Subject: [PATCH 3/9] unittests: better multipath message on fail
+
+Signed-off-by: Jan Tulak <jtulak@redhat.com>
+---
+ tests/unittests/test_multipath.py | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/tests/unittests/test_multipath.py b/tests/unittests/test_multipath.py
+index 49c4a6c..6e58153 100644
+--- a/tests/unittests/test_multipath.py
++++ b/tests/unittests/test_multipath.py
+@@ -167,13 +167,14 @@ class MultipathFunctionCheck(MockSystemDataSource):
+         finally:
+             sys.stdout = self._stdout
+         vol_entries = 0
+-        for line in self._stringio.getvalue().splitlines():
++        output = self._stringio.getvalue()
++        for line in output.splitlines():
+             if line[:6] in ['------', 'Device']:
+                 continue
+             dev = line.split(" ")
+             if dev[0] in ['/dev/dm-90', '/dev/dm-91']:
+                 vol_entries += 1
+-        self.assertEqual(vol_entries, 2, "List vol should show 2 entries for 2 multipath devices, but found {0}.".format(vol_entries))
++        self.assertEqual(vol_entries, 2, "List vol should show 2 entries for 2 multipath devices, but found {0}: {1}".format(vol_entries, output))
+ 
+         # There should be no output for pools
+         sys.stdout = self._stringio = StringIO()
+-- 
+2.21.0
+

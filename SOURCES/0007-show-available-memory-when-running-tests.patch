@@ -1,0 +1,26 @@
+From ee669a077d48bf1c5e3ffd8bf14b79d640055c93 Mon Sep 17 00:00:00 2001
+From: Jan Tulak <jtulak@redhat.com>
+Date: Tue, 23 Apr 2019 14:23:21 +0200
+Subject: [PATCH 7/9] show available memory when running tests
+
+Signed-off-by: Jan Tulak <jtulak@redhat.com>
+---
+ test.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/test.py b/test.py
+index 9c2610e..3c8ba4f 100755
+--- a/test.py
++++ b/test.py
+@@ -309,6 +309,8 @@ if __name__ == '__main__':
+         sys.exit(1)
+ 
+     check_system_dependencies()
++    os.system('free -h')
++
+     if args.system:
+         args.bash = True
+         os.environ['SSM_TEST_SYSTEM'] = '1'
+-- 
+2.21.0
+
