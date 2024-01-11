@@ -1,0 +1,511 @@
+From a80454ac89489945349f2eb0c0c70d6621b67f5b Mon Sep 17 00:00:00 2001
+From: Jan Tulak <jtulak@redhat.com>
+Date: Fri, 10 Aug 2018 16:43:45 +0200
+Subject: [PATCH 2/9] Remove info command for RHEL
+
+Signed-off-by: Jan Tulak <jtulak@redhat.com>
+---
+ README                         |   9 --
+ doc/generate_usage_includes.py |  10 --
+ doc/src/commands/index.rst     |   1 -
+ doc/src/commands/info.rst      |   8 --
+ doc/src/commands/info.txt      |   7 -
+ man8/ssm.8                     |  47 +------
+ ssmlib/main.py                 |  32 -----
+ tests/bashtests/017-info.sh    | 230 ---------------------------------
+ tests/unittests/test_ssm.py    |   1 -
+ 9 files changed, 1 insertion(+), 344 deletions(-)
+ delete mode 100644 doc/src/commands/info.rst
+ delete mode 100644 doc/src/commands/info.txt
+ delete mode 100755 tests/bashtests/017-info.sh
+
+diff --git a/README b/README
+index 95f20ae..17df34d 100644
+--- a/README
++++ b/README
+@@ -148,15 +148,6 @@ The following sections can be specified:
+ Info command
+ ************
+ 
+-**EXPERIMENTAL** This feature is currently experimental. The output
+-format can change and fields can be added or removed.
+-
+-Show detailed information about all detected devices, pools, volumes
+-and snapshots found on the system. The **info** command can be used
+-either alone to show all available items, or you can specify a device,
+-pool, or any other identifier to see information about the specific
+-item.
+-
+ 
+ Remove command
+ **************
+diff --git a/doc/generate_usage_includes.py b/doc/generate_usage_includes.py
+index 5ced9e6..b672dec 100755
+--- a/doc/generate_usage_includes.py
++++ b/doc/generate_usage_includes.py
+@@ -12,7 +12,6 @@ SYNOPSIS_INC = "src/synopsis.inc"
+ OPTIONS_DIR = "src/options/"
+ SSM_OPTIONS_INC = OPTIONS_DIR + "ssm_options.inc"
+ CREATE_OPTIONS_INC = OPTIONS_DIR + "create_options.inc"
+-INFO_OPTIONS_INC = OPTIONS_DIR + "info_options.inc"
+ LIST_OPTIONS_INC = OPTIONS_DIR + "list_options.inc"
+ REMOVE_OPTIONS_INC = OPTIONS_DIR + "remove_options.inc"
+ RESIZE_OPTIONS_INC = OPTIONS_DIR + "resize_options.inc"
+@@ -24,7 +23,6 @@ MIGRATE_OPTIONS_INC = OPTIONS_DIR + "migrate_options.inc"
+ 
+ SSM_USAGE_INC = OPTIONS_DIR + "ssm_usage.inc"
+ CREATE_USAGE_INC = OPTIONS_DIR + "create_usage.inc"
+-INFO_USAGE_INC = OPTIONS_DIR + "info_usage.inc"
+ LIST_USAGE_INC = OPTIONS_DIR + "list_usage.inc"
+ REMOVE_USAGE_INC = OPTIONS_DIR + "remove_usage.inc"
+ RESIZE_USAGE_INC = OPTIONS_DIR + "resize_usage.inc"
+@@ -68,10 +66,6 @@ class GenerateIncludes(object):
+         message = self.format_synopsis(self.ssm_parser.parser_create)
+         self._write_message(message, CREATE_USAGE_INC)
+ 
+-    def write_info_usage(self):
+-        message = self.format_synopsis(self.ssm_parser.parser_info)
+-        self._write_message(message, INFO_USAGE_INC)
+-
+     def write_list_usage(self):
+         message = self.format_synopsis(self.ssm_parser.parser_list)
+         self._write_message(message, LIST_USAGE_INC)
+@@ -107,7 +101,6 @@ class GenerateIncludes(object):
+     def write_usage(self):
+         self.write_ssm_usage()
+         self.write_create_usage()
+-        self.write_info_usage()
+         self.write_list_usage()
+         self.write_remove_usage()
+         self.write_resize_usage()
+@@ -137,9 +130,6 @@ class GenerateIncludes(object):
+         message = self._format_options(self.ssm_parser.parser_create)
+         self._write_message(message, CREATE_OPTIONS_INC)
+ 
+-        message = self._format_options(self.ssm_parser.parser_info)
+-        self._write_message(message, INFO_OPTIONS_INC)
+-
+         message = self._format_options(self.ssm_parser.parser_list)
+         self._write_message(message, LIST_OPTIONS_INC)
+ 
+diff --git a/doc/src/commands/index.rst b/doc/src/commands/index.rst
+index 85ee495..d3f0a0f 100644
+--- a/doc/src/commands/index.rst
++++ b/doc/src/commands/index.rst
+@@ -7,7 +7,6 @@ System Storage Manager Commands
+ 
+     commands_introduction
+     create
+-    info
+     list
+     remove
+     resize
+diff --git a/doc/src/commands/info.rst b/doc/src/commands/info.rst
+deleted file mode 100644
+index d2917ef..0000000
+--- a/doc/src/commands/info.rst
++++ /dev/null
+@@ -1,8 +0,0 @@
+-Info command
+-============
+-
+-.. include:: ../options/info_usage.inc
+-
+-.. include:: info.txt
+-
+-.. include:: ../options/info_options.inc
+\ No newline at end of file
+diff --git a/doc/src/commands/info.txt b/doc/src/commands/info.txt
+deleted file mode 100644
+index 7fadda0..0000000
+--- a/doc/src/commands/info.txt
++++ /dev/null
+@@ -1,7 +0,0 @@
+-**EXPERIMENTAL** This feature is currently experimental. The output format can
+-change and fields can be added or removed.
+-
+-Show detailed information about all detected devices, pools, volumes and
+-snapshots found on the system. The **info** command can be used either alone
+-to show all available items, or you can specify a device, pool, or any other
+-identifier to see information about the specific item.
+\ No newline at end of file
+diff --git a/man8/ssm.8 b/man8/ssm.8
+index 94ad144..5e4057a 100644
+--- a/man8/ssm.8
++++ b/man8/ssm.8
+@@ -30,43 +30,14 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+ .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+ .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+ ..
+-.
+-.nr rst2man-indent-level 0
+-.
+-.de1 rstReportMargin
+-\\$1 \\n[an-margin]
+-level \\n[rst2man-indent-level]
+-level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+--
+-\\n[rst2man-indent0]
+-\\n[rst2man-indent1]
+-\\n[rst2man-indent2]
+-..
+-.de1 INDENT
+-.\" .rstReportMargin pre:
+-. RS \\$1
+-. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+-. nr rst2man-indent-level +1
+-.\" .rstReportMargin post:
+-..
+-.de UNINDENT
+-. RE
+-.\" indent \\n[an-margin]
+-.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-.nr rst2man-indent-level -1
+-.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+-..
+ .SH SYNOPSIS
+ .sp
+-\fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-v**v] [\fP\-v**vv] [\fB\-f\fP] [\fB\-b\fP BACKEND] [\fB\-n\fP] {check,resize,create,list,info,add,remove,snapshot,mount,migrate} ...
++\fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-v**v] [\fP\-v**vv] [\fB\-f\fP] [\fB\-b\fP BACKEND] [\fB\-n\fP] {check,resize,create,list,add,remove,snapshot,mount,migrate} ...
+ .sp
+ \fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fB\-o\fP MNT_OPTIONS] [\fB\-v\fP VIRTUAL_SIZE] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
+ .sp
+ \fBssm\fP \fBlist\fP [\fB\-h\fP] [{volumes,vol,dev,devices,pool,pools,fs,filesystems,snap,snapshots}]
+ .sp
+-\fBssm\fP \fBinfo\fP [\fB\-h\fP] [item]
+-.sp
+ \fBssm\fP \fBremove\fP [\fB\-h\fP] [\fB\-a\fP] [\fBitems\fP [\fBitems\fP ...]]
+ .sp
+ \fBssm\fP \fBresize\fP [\fB\-h\fP] [\fB\-s\fP SIZE] \fBvolume\fP [\fBdevice\fP [\fBdevice\fP ...]]
+@@ -249,22 +220,6 @@ volume. A size suffix K|k, M|m, G|g, T|t, P|p, E|e can
+ be used to define \(aqpower of two\(aq units. If no unit is
+ provided, it defaults to kilobytes.
+ .UNINDENT
+-.SS Info command
+-.sp
+-\fBssm\fP \fBinfo\fP [\fB\-h\fP] [item]
+-.sp
+-\fBEXPERIMENTAL\fP This feature is currently experimental. The output format can
+-change and fields can be added or removed.
+-.sp
+-Show detailed information about all detected devices, pools, volumes and
+-snapshots found on the system. The \fBinfo\fP command can be used either alone
+-to show all available items, or you can specify a device, pool, or any other
+-identifier to see information about the specific item.
+-.INDENT 0.0
+-.TP
+-.B \-h\fP,\fB  \-\-help
+-show this help message and exit
+-.UNINDENT
+ .SS List command
+ .sp
+ \fBssm\fP \fBlist\fP [\fB\-h\fP] [{volumes,vol,dev,devices,pool,pools,fs,filesystems,snap,snapshots}]
+diff --git a/ssmlib/main.py b/ssmlib/main.py
+index 5e99ae4..57a75cc 100644
+--- a/ssmlib/main.py
++++ b/ssmlib/main.py
+@@ -2032,26 +2032,6 @@ class StorageHandle(object):
+         elif args.type in ['snap', 'snapshots']:
+             self.snap.psummary()
+ 
+-    def info(self, args):
+-        """
+-        Show a detailed info about an object
+-        """
+-        sources = [self.pool, self.dev, self.vol, self.snap]
+-        create_graph(*sources)
+-        print("EXPERIMENTAL FEATURE (The format can yet change)\n")
+-
+-        if not args.item:
+-            for source in sources:
+-                source.pinfo()
+-        else:
+-            found = False
+-            for source in sources:
+-                found |= source.pinfo(item=args.item)
+-            if not found:
+-                err = "The item '%s' was not found." % args.item
+-                raise argparse.ArgumentTypeError(err)
+-
+-
+     def add(self, args, skip_check=False):
+         """
+         Add devices into the pool
+@@ -2585,7 +2565,6 @@ class SsmParser(object):
+         self.parser_resize = self._get_parser_resize()
+         self.parser_create = self._get_parser_create()
+         self.parser_list = self._get_parser_list()
+-        self.parser_info = self._get_parser_info()
+         self.parser_add = self._get_parser_add()
+         self.parser_remove = self._get_parser_remove()
+         self.parser_snapshot = self._get_parser_snapshot()
+@@ -2769,17 +2748,6 @@ class SsmParser(object):
+         parser_list.set_defaults(func=self.storage.list)
+         return parser_list
+ 
+-    def _get_parser_info(self):
+-        """
+-        Info command
+-        """
+-        parser_info = self.subcommands.add_parser("info",
+-                help='''Show detailed information about
+-                     an object. EXPERIMENTAL''')
+-        parser_info.add_argument('item', nargs='?')
+-        parser_info.set_defaults(func=self.storage.info)
+-        return parser_info
+-
+     def _get_parser_add(self):
+         """
+         Add command
+diff --git a/tests/bashtests/017-info.sh b/tests/bashtests/017-info.sh
+deleted file mode 100755
+index 2e947db..0000000
+--- a/tests/bashtests/017-info.sh
++++ /dev/null
+@@ -1,230 +0,0 @@
+-#!/bin/bash
+-#
+-# (C)2013 Red Hat, Inc., Jan Tulak <jtulak@redhat.com>
+-#
+-# This program is free software: you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation, either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-
+-export test_name='017-info'
+-export test_description='Check whether info command prints correct values'
+-
+-. lib/test
+-
+-DEV_COUNT=10
+-DEV_SIZE=128
+-TEST_MAX_SIZE=$(($DEV_COUNT*$DEV_SIZE))
+-aux prepare_devs $DEV_COUNT $DEV_SIZE
+-aux prepare_mnts 10
+-TEST_DEVS=$(cat DEVICES)
+-export LVOL_PREFIX="lvol"
+-export SSM_DEFAULT_BACKEND='lvm'
+-export SSM_LVM_DEFAULT_POOL=$vg1
+-export SSM_NONINTERACTIVE='1'
+-
+-snap1="snap1"
+-snap2="snap2"
+-
+-lvol1=${LVOL_PREFIX}001
+-lvol2=${LVOL_PREFIX}002
+-lvol3=${LVOL_PREFIX}003
+-
+-pool0=$vg1
+-pool1=$vg2
+-pool2=$vg3
+-pool3=$vg4
+-
+-TEST_FS=
+-#which mkfs.ext2 && TEST_FS+="ext2 "
+-#which mkfs.ext3 && TEST_FS+="ext3 "
+-which mkfs.ext4 && TEST_FS+="ext4 "
+-which mkfs.xfs  && TEST_FS+="xfs"
+-
+-TEST_MNT=$TESTDIR/mnt
+-[ ! -d $TEST_MNT ] && mkdir $TEST_MNT &> /dev/null
+-
+-# Prepare pools and volumes
+-
+-vol1=volsf
+-vol2=volss
+-vol3=volmf
+-vol4=volms1
+-vol5=volms2
+-vol6=volms3
+-maxvolsz=$((DEV_SIZE-4))
+-size1=$maxvolsz
+-size2=$((DEV_SIZE/2))
+-size3=$((maxvolsz*2))
+-size4=$((DEV_SIZE/2))
+-size5=$((DEV_SIZE*2))
+-size6=$((DEV_SIZE/4))
+-size4s=$((size4-20))
+-size2r=$((size2-4))
+-size5r=$((size5+16))
+-
+-## test a btrfs on a partition
+-#
+-# this is commented out, because the current testing infrastructure is not able
+-# to handle such configuration. We need to move away from the lvm-like test suite
+-# as anything complex and non-lvm is having issues with it. But at the same time
+-# I want this test documented.
+-#
+-#
+-# Test btrfs on a (loopback) partition.
+-# This is a reproducer of a reported issue with ssm info.
+-#
+-# to create the partitions programatically (rather than manually)
+-# we're going to simulate the manual input to fdisk
+-# The sed script strips off all the comments so that we can
+-# document what we're doing in-line with the actual commands
+-# Note that a blank line (commented as "defualt" will send a empty
+-# line terminated with a newline to take the fdisk default.
+-#
+-#sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | gdisk ${dev1}
+-#  n # new partition
+-#  1 # partition number 1
+-#    # default - start at beginning of disk
+-#    # default - end at end of disk
+-#    # default - partition type is not important
+-#  p # print the in-memory partition table
+-#  w # write the partition table
+-#  Y # confirm
+-#  q # and we're done
+-#EOF
+-#partprobe -s $dev1
+-#
+-#mkfs.btrfs ${dev1}p1
+-#ssm info
+-#
+-
+-
+-# Test without a filesystem
+-ssm -f create -n $vol1 $dev1
+-ssm create -n $vol2 -p $pool1 -s ${size2}M $dev2
+-ssm create -n $vol3 -p $pool2 $dev3 $dev4
+-ssm add -p $pool3 $dev{5,6,7,8}
+-ssm create -p $pool3 -s ${size4}m -n $vol4
+-ssm create -p $pool3 -s ${size5}m -n $vol5
+-ssm create -p $pool3 -s ${size6}m -n $vol6
+-lvchange -an $pool3/$vol6
+-
+-# test a not found case
+-output=$(not ssm info foobarbaznotfound 2>&1 )
+-echo "$output" | grep "The item 'foobarbaznotfound' was not found."
+-
+-# Check vol, dev, pool, resized vol, and snapshot
+-output=`ssm info $pool0`
+-check info_table none "$output" "pool name" name $pool0
+-check info_table none "$output" type lvm volume group
+-check info_table none "$output" "logical volume" volume ".*$pool0-$vol1"
+-check info_table none "$output" size $size1.00MB
+-check info_table none "$output" used $size1.00MB
+-
+-output=`ssm info $pool1`
+-check info_table none "$output" "pool name" name $pool1
+-check info_table none "$output" type lvm volume group
+-check info_table none "$output" "logical volume" volume ".*$pool1-$vol2"
+-check info_table none "$output" size $size1.00MB
+-check info_table none "$output" used $size2.00MB
+-
+-output=`ssm info $pool2`
+-check info_table none "$output" "pool name" name $pool2
+-check info_table none "$output" type lvm volume group
+-check info_table none "$output" "logical volume" volume ".*$pool2-$vol3"
+-check info_table none "$output" size $size3.00MB
+-check info_table none "$output" used $size3.00MB
+-
+-output=`ssm info $pool3`
+-check info_table none "$output" "pool name" name $pool3
+-check info_table none "$output" type lvm volume group
+-# The "\|#" is there because info_table none adds a space at the end
+-# of the expression, but we have to get rid of it without causing
+-# false matches.
+-check info_table none "$output" "logical volume.*$vol4\|#" volume ".*$pool3.$vol4"
+-check info_table none "$output" "logical volume.*$vol5\|#" volume ".*$pool3.$vol5"
+-check info_table none "$output" "logical volume.*$vol6\|#" volume ".*$pool3.$vol6"
+-check info_table none "$output" size $((maxvolsz*4)).00MB
+-check info_table none "$output" used $((size4+size5+size6)).00MB
+-
+-
+-output=`ssm info $dev1`
+-check info_table none "$output" type disk
+-check info_table none "$output" "object name" name ".*$dev1"
+-check info_table none "$output" "size" $size1.00MB
+-
+-output=$(ssm info $pool0/$vol1)
+-check info_table none "$output" type lvm logical volume
+-check info_table none "$output" "object name.*dev/$pool0/$vol1\|#"
+-check info_table none "$output" "object name.*mapper/$pool0-$vol1\|#"
+-check info_table none "$output" "size" $size1.00MB
+-check info_table none "$output" "parent pool"
+-check info_table "parent pool" "$output" type lvm volume group
+-check info_table "parent pool" "$output" name $pool0
+-
+-
+-# Check ssm vol after resize
+-ssm -f resize $pool1/$vol2 -s ${size2r}M
+-ssm resize -s ${size5r}m $pool3/$vol5
+-
+-output=`ssm info $pool1`
+-check info_table none "$output" size $size1.00MB
+-check info_table none "$output" used $size2r.00MB
+-output=`ssm info $pool3/$vol5`
+-check info_table none "$output" size $size5r.00MB
+-
+-ssm snapshot $pool3/$vol4 -n snap1
+-ssm snapshot $pool3/$vol4 -s ${size4s}m -n snap2
+-output=`ssm info $pool3/snap1`
+-check info_table none "$output" type snapshot
+-check info_table none "$output" parent volume $pool3/$vol4
+-output=`ssm info $pool3/snap2`
+-check info_table none "$output" size $size4s.00MB
+-
+-ssm -f remove -a
+-
+-# Test with filesystem
+-for fs in $TEST_FS ; do
+-	ssm -f create -n $vol1 $dev1 --fs $fs
+-	ssm create -n $vol2 -p $pool1 -s ${size2}M $dev2 --fs $fs
+-
+-	# Check fs, vol, dev, pool, resized vol, and snapshot
+-	output=`ssm info $pool0/$vol1`
+-	check info_table none "$output" "object name.*$pool0/$vol1"
+-	check info_table filesystem "$output" "type"  $fs
+-
+-	ssm -f remove -a
+-
+-done
+-
+-# Create volume with all devices at once
+-size=$(($DEV_SIZE*6))
+-ssm create --size ${size}M $TEST_DEVS
+-
+-# Take a snapshot with the default params
+-export SSM_DEFAULT_BACKEND='btrfs'
+-ssm snapshot --name $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
+-
+-output=$(ssm info $SSM_LVM_DEFAULT_POOL/$snap1)
+-check info_table none "$output" "object name.*$SSM_LVM_DEFAULT_POOL/$snap1"
+-check info_table none "$output" "type" snapshot
+-check info_table none "$output" "parent volume.*$SSM_LVM_DEFAULT_POOL/$lvol1"
+-
+-output=$(ssm info $SSM_LVM_DEFAULT_POOL)
+-check info_table none "$output" "type" lvm volume group
+-check info_table none "$output" "logical volume.*$snap1"
+-
+-
+-export SSM_DEFAULT_BACKEND='lvm'
+-
+-
+-
+-exit 0
+diff --git a/tests/unittests/test_ssm.py b/tests/unittests/test_ssm.py
+index 142bee2..3fe8f5f 100644
+--- a/tests/unittests/test_ssm.py
++++ b/tests/unittests/test_ssm.py
+@@ -281,7 +281,6 @@ class SimpleSsmSanityCheck(unittest.TestCase):
+         self.assert_("resize" in obj)
+         self.assert_("create" in obj)
+         self.assert_("list" in obj)
+-        self.assert_("info" in obj)
+         self.assert_("add" in obj)
+         self.assert_("remove" in obj)
+         self.assert_("snapshot" in obj)
+-- 
+2.21.0
+

@@ -1,0 +1,65 @@
+From e92811e297c5eb91a5285e10a7519b53dc45a6d9 Mon Sep 17 00:00:00 2001
+From: Jan Tulak <jtulak@redhat.com>
+Date: Thu, 11 Apr 2019 14:15:26 +0200
+Subject: [PATCH 4/9] bashtests: allow testing of system-wide ssm
+
+This patch allows us to test the installed, system-wide ssm, instead of
+the local version.
+
+Signed-off-by: Jan Tulak <jtulak@redhat.com>
+---
+ test.py                     |  5 +++++
+ tests/bashtests/lib/test.sh | 13 ++++++++++++-
+ 2 files changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/test.py b/test.py
+index 28530fa..5620679 100755
+--- a/test.py
++++ b/test.py
+@@ -268,6 +268,8 @@ if __name__ == '__main__':
+                     help='run only unit tests')
+     parser.add_argument('-l', '--logs', dest='want_logs', action='store_true',
+                     help='if a bash test fails, print out it\'s log to stdout')
++    parser.add_argument('-s', '--system', dest='system', action='store_true',
++                    help='Test the installed version of ssm in system. Implies --bash.')
+     parser.add_argument('tests', metavar='TEST', type=str, nargs='*',
+                     help='Specific tests to be run. For bash tests, '
+                          'that means either a full name (001-foo.sh), '
+@@ -280,6 +282,9 @@ if __name__ == '__main__':
+     args = parser.parse_args()
+ 
+     check_system_dependencies()
++    if args.system:
++        args.bash = True
++        os.environ['SSM_TEST_SYSTEM'] = '1'
+ 
+     run_all = not args.unit and not args.bash
+     if args.unit and args.bash:
+diff --git a/tests/bashtests/lib/test.sh b/tests/bashtests/lib/test.sh
+index 319cf97..af37d98 100644
+--- a/tests/bashtests/lib/test.sh
++++ b/tests/bashtests/lib/test.sh
+@@ -15,8 +15,19 @@ TZ=UTC
+ 
+ unset CDPATH
+ export HERE=$(pwd)
++# If SSM_TEST_SYSTEM is set, run the test on a system-wide version instead of
++# local one.
++if [ "$SSM_TEST_SYSTEM" != "" ]; then
++	export SSM="$(which ssm)"
++	if [ "$SSM" == "" ]; then
++		echo "ERROR: SSM_TEST_SYSTEM set, but ssm wasn't found in PATH."
++		exit 1
++	fi
++else
++	export SSM="$HERE/../../bin/ssm.local"
++fi
++echo "Tested ssm executable is '$SSM'"
+ export PATH=$HERE/lib:$PATH
+-export SSM="$HERE/../../bin/ssm.local"
+ chmod +x $SSM
+ 
+ # grab some common utilities
+-- 
+2.21.0
+
